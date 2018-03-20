@@ -393,8 +393,6 @@ function MathProgBase.optimize!(m::JuniperModel)
         m.solution = getvalue(m.x)
     end
 
-    println("Relaxation finished")
-
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
     m.soltime = time()-m.start_time

@@ -186,8 +186,6 @@ function branch_strong_on!(m,opts,step_obj,
                             restart,new_infeasible_int_vars,set_to_last_var = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node, strong_restart)
                             infeasible_int_vars = new_infeasible_int_vars
 
-                            println("Restart: ", restart)
-
                             need_to_resolve = true
                             # only variables where one branch is infeasible => no restart and break
                             if set_to_last_var
