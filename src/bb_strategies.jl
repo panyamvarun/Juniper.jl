@@ -292,7 +292,6 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
         end
     end
 
-
     gmc_r = gains.minus_counter .< reliability_param
     gpc_r = gains.plus_counter  .< reliability_param
 

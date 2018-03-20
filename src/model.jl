@@ -209,6 +209,118 @@ function print_options(m::JuniperModel;all=true)
     println()
 end
 
+function parallel_init(m::JuniperModel)
+    np = nprocs()  # determine the number of processes available
+    for p=2:np
+        remotecall_fetch(srand, p, 1)
+        sendto(p, m=m)
+        sendto(p, is_newincumbent=false)
+    end
+end
+
+function update_processor(relaxation_time, solution, objval, status)
+    global m
+    m.relaxation_time = relaxation_time
+    m.solution = solution
+    m.objval = objval
+    m.status = status
+end
+
+"""
+    parallel_update(m::JuniperModel)
+
+Update relaxation_time, solution, objval and status on the processors
+"""
+function parallel_update(m::JuniperModel)
+    np = nprocs()  # determine the number of processes available
+    @sync begin
+        for p=1:np
+            if p != myid() || np == 1
+                @async begin
+                    remotecall_fetch(update_processor, p, m.relaxation_time, m.solution, m.objval, m.status)
+                end
+            end
+        end
+    end
+end
+
+
+"""
+    solve_relaxation(restart_values)
+
+Solve the root relaxation using restart_values on a processor. The global JuniperModel is used.
+"""
+function solve_relaxation(restart_values)
+    global m
+    for i=1:m.num_var      
+        setvalue(m.x[i], restart_values[i])
+    end
+
+    solve_start = time()
+    status = solve(m.model)
+    solve_time = time()-solve_start
+    internal_model = internalmodel(m.model)
+    if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+        MathProgBase.freemodel!(internal_model)
+    end
+    sol = getvalue(m.x)
+    obj = getobjectivevalue(m.model)
+    return status, obj, sol, solve_time
+end
+
+"""
+    parallel_root_relaxation!(m::JuniperModel)
+
+Calls solve_relaxation at least once on every processor so that every processor solved a model at least once.
+If the number of `num_resolve_root_relaxation` is bigger than the number of processors and no feasible solution was 
+found so far. Solve parallel with different restart values until Optimal or `num_resolve_root_relaxation` is reached.
+"""
+function parallel_root_relaxation!(m::JuniperModel)
+    nw = nworkers()
+    opt_restarts = m.options.num_resolve_root_relaxation
+    nrestarts = opt_restarts > nw ? opt_restarts : nw
+    restart_values = Vector{Vector{Float64}}()
+    for i=1:nrestarts
+        push!(restart_values, generate_random_restart(m))
+    end
+
+    start_idx = 1
+
+    nextidx() = (idx=start_idx; start_idx+=1; idx)
+
+    worked_processors = Vector{Bool}(nw)
+
+    best_sol = zeros(m.num_var)
+    best_obj = m.obj_sense == :Max ? -Inf : Inf
+    best_status = :None
+    t_one_solve = 0.0
+
+    np = nprocs()
+    @sync begin
+        for p=1:np
+            if p != myid() || np == 1
+                @async begin
+                    while true
+                        idx = nextidx()
+                        if idx > nrestarts || (best_status == :Optimal && sum(worked_processors) == nw)
+                            break
+                        end
+                        status, obj, sol, solve_time = remotecall_fetch(solve_relaxation, p, restart_values[idx])
+                        worked_processors[p-1] = true
+                        if best_status != :Optimal || (status == :Optimal && ((m.obj_sense == :Max && obj > best_obj) || (m.obj_sense == :Min && obj < best_obj)))
+                            best_sol = sol
+                            best_obj = obj
+                            best_status = status
+                            t_one_solve = solve_time
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return best_status, best_obj, best_sol, t_one_solve, nrestarts
+end
+
 """
     MathProgBase.optimize!(m::JuniperModel)
 
@@ -243,35 +355,47 @@ function MathProgBase.optimize!(m::JuniperModel)
 
     m.x = x
     m.start_time = time()
-    m.status = solve(m.model)
-    restarts = 0
-    max_restarts = m.options.num_resolve_root_relaxation
-    while m.status != :Optimal && m.status != :LocalOptimal && 
-        restarts < max_restarts && time()-m.start_time < m.options.time_limit
 
-        internal_model = internalmodel(m.model)
-        if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
-            MathProgBase.freemodel!(internal_model)
-        end
-        restart_values = generate_random_restart(m)
-        for i=1:m.num_var      
-            setvalue(m.x[i], restart_values[i])
-        end
+    if m.options.processors > 1
+        parallel_init(m)
+        best_status, best_obj, best_sol, t_one_solve, restarts = parallel_root_relaxation!(m)
+        m.status = best_status
+        m.relaxation_time = t_one_solve
+        m.objval = best_obj
+        m.solution = best_sol
+        parallel_update(m)
+    else
         m.status = solve(m.model)
-        restarts += 1
+        m.relaxation_time = time()-m.start_time
+        restarts = 0
+        max_restarts = m.options.num_resolve_root_relaxation
+        while m.status != :Optimal && m.status != :LocalOptimal && 
+            restarts < max_restarts && time()-m.start_time < m.options.time_limit
+
+            internal_model = internalmodel(m.model)
+            if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+                MathProgBase.freemodel!(internal_model)
+            end
+            restart_values = generate_random_restart(m)
+            for i=1:m.num_var      
+                setvalue(m.x[i], restart_values[i])
+            end
+            m.status = solve(m.model)
+            restarts += 1
+        end
+        m.objval   = getobjectivevalue(m.model)
+        m.solution = getvalue(m.x)
     end
 
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
     m.soltime = time()-m.start_time
-    m.relaxation_time = time()-m.start_time
     if m.status != :Optimal && m.status != :LocalOptimal
         return m.status
     end
     
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
-    m.objval   = getobjectivevalue(m.model)
-    m.solution = getvalue(m.x)
+  
 
     internal_model = internalmodel(m.model)
     if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})

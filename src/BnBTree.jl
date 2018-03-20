@@ -516,11 +516,6 @@ function sendto(p::Int; args...)
     end
 end
 
-function dummysolve()
-    global m
-    solve(m.model)
-end
-
 """
     pmap(f, tree, last_table_arr, time_bnb_solve_start,
         fields, field_chars, time_obj)
@@ -538,22 +533,10 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
         np = tree.options.processors+1
     end
 
-    # function to produce the next work item from the queue.
-    # in this case it's just an index.
     ps = tree.options.log_levels
     still_running = true
     run_counter = 0
     counter = 0
-
-    for p=2:np
-        remotecall_fetch(srand, p, 1)
-        sendto(p, m=tree.m)
-        sendto(p, is_newincumbent=false)
-    end
-
-    for p=3:np
-        remotecall(dummysolve, p)
-    end
 
     p_counter = zeros(np)
 
