@@ -122,6 +122,12 @@ function MathProgBase.loadproblem!(
     m.solution = fill(NaN, m.num_var)
     m.var_type = fill(:Cont,num_var)
 
+    nw = nworkers()
+    if nw < m.options.processors
+        m.options.processors = nw
+        warn("Julia was started with less processors then you define in your options")
+    end
+
     MathProgBase.initialize(m.d, [:ExprGraph,:Jac,:Grad])
 end
 
@@ -210,7 +216,7 @@ function print_options(m::JuniperModel;all=true)
 end
 
 function parallel_init(m::JuniperModel)
-    np = nprocs()  # determine the number of processes available
+    np = m.options.processors+1
     for p=2:np
         remotecall_fetch(srand, p, 1)
         sendto(p, m=m)
@@ -232,7 +238,7 @@ end
 Update relaxation_time, solution, objval and status on the processors
 """
 function parallel_update(m::JuniperModel)
-    np = nprocs()  # determine the number of processes available
+    np = m.options.processors+1
     @sync begin
         for p=1:np
             if p != myid() || np == 1
@@ -276,7 +282,8 @@ If the number of `num_resolve_root_relaxation` is bigger than the number of proc
 found so far. Solve parallel with different restart values until Optimal or `num_resolve_root_relaxation` is reached.
 """
 function parallel_root_relaxation!(m::JuniperModel)
-    nw = nworkers()
+    nw = m.options.processors
+    np = nw+1
     opt_restarts = m.options.num_resolve_root_relaxation
     nrestarts = opt_restarts > nw ? opt_restarts : nw
     restart_values = Vector{Vector{Float64}}()
@@ -288,14 +295,13 @@ function parallel_root_relaxation!(m::JuniperModel)
 
     nextidx() = (idx=start_idx; start_idx+=1; idx)
 
-    worked_processors = Vector{Bool}(nw)
+    worked_processors = falses(nw)
 
     best_sol = zeros(m.num_var)
     best_obj = m.obj_sense == :Max ? -Inf : Inf
     best_status = :None
     t_one_solve = 0.0
 
-    np = nprocs()
     @sync begin
         for p=1:np
             if p != myid() || np == 1
@@ -386,6 +392,8 @@ function MathProgBase.optimize!(m::JuniperModel)
         m.objval   = getobjectivevalue(m.model)
         m.solution = getvalue(m.x)
     end
+
+    println("Relaxation finished")
 
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 

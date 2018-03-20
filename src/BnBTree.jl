@@ -524,15 +524,8 @@ Run the solving steps on several processors
 """
 function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     fields, field_chars, time_obj)
-    np = nprocs()  # determine the number of processes available
-    if np < tree.options.processors
-        tree.options.processors = np
-        warn("Julia was started with less processors then you define in your options")
-    end
-    if tree.options.processors+1 < np
-        np = tree.options.processors+1
-    end
-
+    np = tree.options.processors+1 # workers +1
+   
     ps = tree.options.log_levels
     still_running = true
     run_counter = 0
