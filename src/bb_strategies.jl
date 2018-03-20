@@ -235,9 +235,6 @@ function branch_strong_on!(m,opts,step_obj,
         status = :Resolve
     end
 
-    println("status: ", status)
-    println("max_gain_var: ", max_gain_var)
-
     return status, max_gain_var, left_node, right_node, 
     (gains_m, gains_mc, gains_p, gains_pc), strong_restarts
 end
@@ -258,7 +255,8 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
     # use strong_branching_approx_time_limit to change num_strong_var
     if !isinf(opts.strong_branching_approx_time_limit)
         approx_time_per_node = 2*m.relaxation_time
-        new_num_strong_var = Int(floor(opts.strong_branching_approx_time_limit/approx_time_per_node))
+        approx_time_limit = opts.processors*opts.strong_branching_approx_time_limit
+        new_num_strong_var = Int(floor(approx_time_limit/approx_time_per_node))
         new_num_strong_var = new_num_strong_var == 0 ? 1 : new_num_strong_var
         if new_num_strong_var < num_strong_var
             warn("Changed num_strong_var to $new_num_strong_var because of strong_branching_approx_time_limit")
@@ -322,7 +320,8 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
     # use strong_branching_approx_time_limit to change num_strong_var
     if !isinf(opts.strong_branching_approx_time_limit)
         approx_time_per_node = 2*m.relaxation_time
-        new_num_strong_var = Int(floor(opts.strong_branching_approx_time_limit/approx_time_per_node))
+        approx_time_limit = opts.processors*opts.strong_branching_approx_time_limit
+        new_num_strong_var = Int(floor(approx_time_limit/approx_time_per_node))
         new_num_strong_var = new_num_strong_var == 0 ? 1 : new_num_strong_var
         if new_num_strong_var < num_strong_var
             warn("Changed num_strong_var to $new_num_strong_var because of strong_branching_approx_time_limit")
