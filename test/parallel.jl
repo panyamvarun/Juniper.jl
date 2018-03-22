@@ -29,8 +29,11 @@ include("POD_experiment/blend029.jl")
     println("obj: ", juniper_val)
     println("bound: ", juniper_bb)
 
-
-    @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+    # it's a minimization problem but is nonconvex
+    @test juniper_val >= 285506
+    @test juniper_bb <= juniper_val
+    im = internalmodel(m)
+    @test getobjgap(m) <= im.options.mip_gap
 end
 
 @testset "Batch.mod reliable parallel > processors" begin
@@ -57,8 +60,9 @@ end
     println("obj: ", juniper_val)
     println("bound: ", juniper_bb)
 
-
-    @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+    # it's a minimization problem but is nonconvex
+    @test juniper_val >= 285506
+    @test juniper_bb <= juniper_val
 end
 
 @testset "Batch.mod no restart parallel" begin
@@ -85,8 +89,9 @@ end
     println("obj: ", juniper_val)
     println("bound: ", juniper_bb)
 
-
-    @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+    # it's a minimization problem but is nonconvex
+    @test juniper_val >= 285506
+    @test juniper_bb <= juniper_val
 end
 
 @testset "Knapsack 100% limit" begin
