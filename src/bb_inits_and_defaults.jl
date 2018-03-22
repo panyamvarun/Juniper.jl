@@ -1,5 +1,4 @@
 function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
-    srand(1)
     node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval)
     obj_gain_m = zeros(m.num_int_bin_var)
     obj_gain_p = zeros(m.num_int_bin_var)

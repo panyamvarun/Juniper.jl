@@ -84,6 +84,8 @@ function JuniperNonlinearModel(s::JuniperSolverObj)
     m.nsolutions = 0
     m.solutions = []
     m.num_int_bin_var = 0
+    m.num_nl_constr = 0
+    m.num_l_constr = 0
     m.nintvars = 0
     m.nbinvars = 0
     m.nnodes = 1 # is set to one for the root node
@@ -308,7 +310,7 @@ function parallel_root_relaxation!(m::JuniperModel)
                 @async begin
                     while true
                         idx = nextidx()
-                        if idx > nrestarts || (best_status == :Optimal && sum(worked_processors) == nw)
+                        if idx > nrestarts || (best_status == :Optimal && sum(worked_processors) == nw) || time()-m.start_time >= m.options.time_limit
                             break
                         end
                         status, obj, sol, solve_time = remotecall_fetch(solve_relaxation, p, restart_values[idx])
@@ -336,6 +338,8 @@ function MathProgBase.optimize!(m::JuniperModel)
     ps = m.options.log_levels
     (:All in ps || :AllOptions in ps) && print_options(m;all=true)
     (:Options in ps) && print_options(m;all=false)
+
+    srand(1)
 
     m.model = Model(solver=m.nl_solver)
     lb = m.l_var

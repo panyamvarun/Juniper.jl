@@ -201,7 +201,7 @@ function branch_strong_on!(m,opts,step_obj,
                                 break
                             end
 
-                            if restart && time()-strong_time > opts.strong_branching_approx_time_limit
+                            if restart && time()-strong_time >= opts.strong_branching_approx_time_limit
                                 restart = false
                             end
                         end
@@ -219,7 +219,7 @@ function branch_strong_on!(m,opts,step_obj,
                         end
                         set_temp_gains!(gains_m,gains_mc,gains_p,gains_pc,gain_l,gain_r,int_var_idx)
             
-                        if time()-m.start_time >= opts.time_limit
+                        if time()-m.start_time >= opts.time_limit || time()-strong_time >= opts.strong_branching_approx_time_limit
                             break
                         end
                     end

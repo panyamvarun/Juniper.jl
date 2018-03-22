@@ -34,7 +34,9 @@ sol_atol = 1e-3
 
 function DefaultTestSolver(;nl_solver=IpoptSolver(print_level=0), solver_args...)
     solver_args_dict = Dict{Symbol,Any}()
-    solver_args_dict[:log_levels] = []
+    if !isdefined(solver_args_dict,:log_levels)
+        solver_args_dict[:log_levels] = []
+    end
     for v in solver_args
         solver_args_dict[v[1]] = v[2]
     end

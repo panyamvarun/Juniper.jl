@@ -320,8 +320,6 @@ end
 Run the feasibility pump 
 """
 function fpump(m)
-    srand(1)
-
     if are_type_correct(m.solution, m.var_type, m.int2var_idx, m.options.atol)
         return m.solution, m.objval 
     end
