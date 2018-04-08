@@ -254,16 +254,14 @@ end
 
 
 """
-    solve_relaxation(restart_values, set_restart)
+    solve_relaxation(restart_values)
 
 Solve the root relaxation using restart_values on a processor. The global JuniperModel is used.
 """
-function solve_relaxation(restart_values, set_restart)
+function solve_relaxation(restart_values)
     global m
-    if set_restart
-        for i=1:m.num_var      
-            setvalue(m.x[i], restart_values[i])
-        end
+    for i=1:m.num_var      
+        setvalue(m.x[i], restart_values[i])
     end
 
     solve_start = time()
@@ -291,7 +289,8 @@ function parallel_root_relaxation!(m::JuniperModel)
     opt_restarts = m.options.num_resolve_root_relaxation
     nrestarts = opt_restarts > nw ? opt_restarts : nw
     restart_values = Vector{Vector{Float64}}()
-    for i=1:nrestarts
+    push!(restart_values, zeros(m.num_var))
+    for i=2:nrestarts
         push!(restart_values, generate_random_restart(m))
     end
   
@@ -315,8 +314,7 @@ function parallel_root_relaxation!(m::JuniperModel)
                         if idx > nrestarts || (best_status == :Optimal && sum(worked_processors) == nw) || time()-m.start_time >= m.options.time_limit
                             break
                         end
-                        set_restart = idx == 1 ? false : true
-                        status, obj, sol, solve_time = remotecall_fetch(solve_relaxation, p, restart_values[idx], set_restart)
+                        status, obj, sol, solve_time = remotecall_fetch(solve_relaxation, p, restart_values[idx])
                         worked_processors[p-1] = true
                         if best_status != :Optimal || (status == :Optimal && ((m.obj_sense == :Max && obj > best_obj) || (m.obj_sense == :Min && obj < best_obj)))
                             best_sol = sol
