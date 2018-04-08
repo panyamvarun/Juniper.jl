@@ -71,26 +71,6 @@ function branch_strong_on!(m,opts,step_obj,
             gains_p[int_var_idx] = gain_r
             gains_pc[int_var_idx] = 1
         end
-<<<<<<< HEAD
-=======
-    end
-
-    function get_current_gains(node, l_nd, r_nd)
-        gain_l = sigma_minus(node, l_nd, node.solution[node.var_idx])
-        gain_r = sigma_plus(node,  r_nd, node.solution[node.var_idx])
-
-        if isinf(gain_l)
-            gain = gain_r
-        elseif isinf(gain_r)
-            gain = gain_l
-        else
-            gain = (gain_l+gain_r)/2
-        end
-        if isnan(gain)
-            gain = Inf
-        end
-        return gain_l, gain_r, gain
->>>>>>> master
     end
 
     function get_current_gains(node, l_nd, r_nd)
@@ -116,7 +96,6 @@ function branch_strong_on!(m,opts,step_obj,
     node = step_obj.node
     atol = opts.atol
 
-<<<<<<< HEAD
     function get_next_var_idx()
         if restart
             strong_restarts += 1
@@ -149,19 +128,13 @@ function branch_strong_on!(m,opts,step_obj,
 
     strong_time = time()
 
-=======
->>>>>>> master
     left_node = nothing
     right_node = nothing
 
     max_gain = -Inf # then one is definitely better
     max_gain_var = 0
     max_gain_int_var = 0
-<<<<<<< HEAD
     
-=======
-    strong_restarts = -1
->>>>>>> master
     restart = true
     status = :Normal
     node = step_obj.node
@@ -172,7 +145,6 @@ function branch_strong_on!(m,opts,step_obj,
     gains_pc = zeros(Int64,m.num_int_bin_var)
 
     left_node, right_node = nothing, nothing
-<<<<<<< HEAD
     
     need_to_resolve = false
 
@@ -253,89 +225,6 @@ function branch_strong_on!(m,opts,step_obj,
                     end
                 end
             end
-=======
-    atol = opts.atol
-
-    need_to_resolve = false
-
-    while restart 
-        strong_restarts += 1 # is init with -1
-        restart = false
-        for int_var_idx in reasonable_int_vars
-            # don't rerun if the variable has already one infeasible node
-            if int_var_idx in infeasible_int_vars
-                continue
-            end
-            var_idx = int2var_idx[int_var_idx]
-            step_obj.var_idx = var_idx
-            u_b, l_b = node.u_var[var_idx], node.l_var[var_idx]
-            # don't rerun if bounds are exact or is type correct
-            if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[var_idx],m.var_type[var_idx], atol)
-                continue
-            end
-
-            # branch on the current variable and get the corresponding children
-            l_nd,r_nd = branch!(m, opts, step_obj, counter, int2var_idx; temp=true)
-
-            # no current restart => we can set max_gain and variable
-            gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
-
-            if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && counter == 1
-                # TODO: Might be Error/UserLimit instead of infeasible
-                status = :GlobalInfeasible
-                break
-            end
-
-            # check if one part is infeasible => update bounds & restart if strong restart is true
-            if l_nd.relaxation_state != :Optimal || r_nd.relaxation_state != :Optimal
-                if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
-                    # TODO: Might be Error/UserLimit instead of infeasible
-                    status = :LocalInfeasible
-                    break
-                end
-                restart,new_infeasible_int_vars,set_to_last_var = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node, strong_restart)
-                infeasible_int_vars = new_infeasible_int_vars
-
-                need_to_resolve = true
-                # only variables where one branch is infeasible => no restart and break
-                if set_to_last_var
-                    max_gain_var = var_idx
-                    max_gain_int_var = int_var_idx
-                    left_node = l_nd
-                    right_node = r_nd
-                    restart = false
-                    need_to_resolve = false
-                    gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
-                    max_gain = gain
-                    set_temp_gains!(gains_m,gains_mc,gains_p,gains_pc,gain_l,gain_r,int_var_idx)
-                    break
-                end
-
-                if restart && time()-strong_time > opts.strong_branching_approx_time_limit
-                    restart = false
-                end
-            end
-
-            # don't update maximum if restart
-            if gain > max_gain && !restart 
-                max_gain = gain
-                max_gain_var = var_idx
-                max_gain_int_var = int_var_idx
-                left_node = l_nd
-                right_node = r_nd
-                # we are changing the bounds if one branch is infeasible then the current
-                # selection might not work anymore => we have to resolve it later
-                need_to_resolve = false
-            end
-            set_temp_gains!(gains_m,gains_mc,gains_p,gains_pc,gain_l,gain_r,int_var_idx)
-            if restart
-                break
-            end
-
-            if time()-m.start_time >= opts.time_limit
-                break
-            end
->>>>>>> master
         end
     end
 
