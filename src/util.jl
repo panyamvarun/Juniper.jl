@@ -1,13 +1,13 @@
 #=
     Used from https://github.com/lanl-ansi/Alpine.jl
-=# 
+=#
 function expr_dereferencing!(expr, m)
     for i in 2:length(expr.args)
         if isa(expr.args[i], Union{Float64,Int64})
             k = 0
         elseif expr.args[i].head == :ref
             @assert isa(expr.args[i].args[2], Int)
-            expr.args[i] = Variable(m, expr.args[i].args[2])
+            expr.args[i] = JuMP.Variable(m, expr.args[i].args[2])
         elseif expr.args[i].head == :call
             expr_dereferencing!(expr.args[i], m)
         else
@@ -19,7 +19,7 @@ end
 """
     expr_dereferencing_fixing!(expr, m, var_types, sol)
 
-Fix the value of discrete variables in an expression 
+Fix the value of discrete variables in an expression
 """
 function expr_dereferencing_fixing!(expr, m, var_types, sol)
     for i in 2:length(expr.args)
@@ -30,7 +30,7 @@ function expr_dereferencing_fixing!(expr, m, var_types, sol)
             if var_types[expr.args[i].args[2]] != :Cont
                 expr.args[i] = sol[expr.args[i].args[2]]
             else
-                expr.args[i] = Variable(m, expr.args[i].args[2])
+                expr.args[i] = JuMP.Variable(m, expr.args[i].args[2])
             end
         elseif expr.args[i].head == :call
             expr_dereferencing_fixing!(expr.args[i], m, var_types, sol)
@@ -43,7 +43,7 @@ end
 """
     divide_nl_l_constr(m::JuniperModel)
 
-Get # of linear and non linear constraints and save for each index if linear or non linear    
+Get # of linear and non linear constraints and save for each index if linear or non linear
 """
 function divide_nl_l_constr(m::JuniperModel)
     isconstrlinear = Array{Bool}(undef, m.num_constr)
@@ -54,7 +54,7 @@ function divide_nl_l_constr(m::JuniperModel)
             m.num_l_constr += 1
         end
     end
-    m.num_nl_constr = m.num_constr - m.num_l_constr  
+    m.num_nl_constr = m.num_constr - m.num_l_constr
     m.isconstrlinear = isconstrlinear
 end
 
@@ -63,28 +63,28 @@ function generate_random_restart(m; cont=true)
     for i=1:m.num_var
         lbi_def = true
         ubi_def = true
-        if m.l_var[i] > typemin(Int64) 
+        if m.l_var[i] > typemin(Int64)
             lbi = m.l_var[i]
         else
             lbi = typemin(Int64)
             lbi_def = false
         end
 
-        if m.u_var[i] < typemax(Int64) 
+        if m.u_var[i] < typemax(Int64)
             ubi = m.u_var[i]
         else
             ubi = typemin(Int64)
             ubi_def = false
         end
 
-        if !ubi_def && !lbi_def 
+        if !ubi_def && !lbi_def
             ubi = 10
             lbi = -10
         elseif !ubi_def
             ubi = lbi+20
         elseif !lbi_def
             lbi = ubi-20
-        end             
+        end
 
         if m.var_type[i] == :Cont || cont
             push!(values,(ubi-lbi)*rand()+lbi)
@@ -147,10 +147,10 @@ function construct_affine_vector(m)
 end
 
 
-""" 
+"""
     construct_complete_affine_matrix(m)
 
-Construct full affine matrix by using m.affs and all variables 
+Construct full affine matrix by using m.affs and all variables
 use construct_disc_affine_matrix if only interested in discrete variables
 """
 function construct_complete_affine_matrix(m)
@@ -167,10 +167,10 @@ function construct_complete_affine_matrix(m)
     return mat
 end
 
-""" 
+"""
     construct_disc_affine_matrix(m; only_non_zero=true)
 
-Construct full affine matrix by using m.affs and only discrete variables 
+Construct full affine matrix by using m.affs and only discrete variables
 use construct_complete_affine_matrix if interested in all variables
 if only_non_zero is set to true all rows with all zeros are removed
 """
@@ -205,7 +205,7 @@ end
 """
     get_reasonable_int_vars(node, var_type, int_vars, disc2var_idx, atol)
 
-Get all discrete variables which aren't close to discrete yet based on atol 
+Get all discrete variables which aren't close to discrete yet based on atol
 """
 function get_reasonable_int_vars(node, var_type, int_vars, disc2var_idx, atol)
     reasonable_int_vars = zeros(Int64,0)

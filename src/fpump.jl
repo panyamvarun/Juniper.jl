@@ -5,33 +5,33 @@ Generate a mip using the linear constraints (aff) of the original model
 Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
 function generate_mip(m, nlp_sol, aff, tabu_list)
-    mip_model = Model(solver=m.mip_solver)
+    mip_model = JuMP.Model(solver=m.mip_solver)
     lb = m.l_var
     ub = m.u_var
-    @variable(mip_model, lb[i] <= mx[i=1:m.num_var] <= ub[i])
+    JuMP.@variable(mip_model, lb[i] <= mx[i=1:m.num_var] <= ub[i])
     for i=1:m.num_var
         if m.var_type[i] == :Int
-            setcategory(mx[i], :Int)
+            JuMP.setcategory(mx[i], :Int)
         elseif m.var_type[i] == :Bin
-            setcategory(mx[i], :Bin)
+            JuMP.setcategory(mx[i], :Bin)
         end
     end
 
     for c in aff
         if c.sense == :(>=)
-            @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) >= c.rhs)
+            JuMP.@constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) >= c.rhs)
         elseif c.sense == :(<=)
-            @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) <= c.rhs)
+            JuMP.@constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) <= c.rhs)
         elseif c.sense == :(==)
-            @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) == c.rhs)
+            JuMP.@constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) == c.rhs)
         end
     end
 
-    @variable(mip_model, mabsx[i=1:m.num_disc_var] >= 0)
+    JuMP.@variable(mip_model, mabsx[i=1:m.num_disc_var] >= 0)
     for i=1:m.num_disc_var
         vi = m.disc2var_idx[i]
-        @constraint(mip_model, mabsx[i] >= mx[vi]-nlp_sol[vi])
-        @constraint(mip_model, mabsx[i] >= -mx[vi]+nlp_sol[vi])
+        JuMP.@constraint(mip_model, mabsx[i] >= mx[vi]-nlp_sol[vi])
+        JuMP.@constraint(mip_model, mabsx[i] >= -mx[vi]+nlp_sol[vi])
     end
 
     # How long is the tabu list
@@ -46,23 +46,23 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
 
     # If there solutions in the tabu list => avoid them
     if num_sols > 0
-        @variable(mip_model, z1[j=1:m.num_disc_var,k=1:num_sols], Bin)
-        @variable(mip_model, z2[j=1:m.num_disc_var,k=1:num_sols], Bin)
+        JuMP.@variable(mip_model, z1[j=1:m.num_disc_var,k=1:num_sols], Bin)
+        JuMP.@variable(mip_model, z2[j=1:m.num_disc_var,k=1:num_sols], Bin)
         v = tabu_list.sols
         for k=1:num_sols, j=1:m.num_disc_var
             i = m.disc2var_idx[j]
             lbi = m.l_var[i] > typemin(Int64) ? m.l_var[i] : typemin(Int64)
             ubi = m.u_var[i] < typemax(Int64) ? m.u_var[i] : typemax(Int64)
-            @constraint(mip_model, z1[j,k]+z2[j,k] <= 1)
-            @constraint(mip_model, (lbi - v[k][j])*z1[j,k]+z2[j,k]+v[k][j] <= mx[i])
-            @constraint(mip_model, mx[i] <= v[k][j] - z1[j,k] + (ubi-v[k][j])*z2[j,k])
+            JuMP.@constraint(mip_model, z1[j,k]+z2[j,k] <= 1)
+            JuMP.@constraint(mip_model, (lbi - v[k][j])*z1[j,k]+z2[j,k]+v[k][j] <= mx[i])
+            JuMP.@constraint(mip_model, mx[i] <= v[k][j] - z1[j,k] + (ubi-v[k][j])*z2[j,k])
         end
         for k=1:num_sols
-            @constraint(mip_model, sum(z1[j,k]+z2[j,k] for j=1:m.num_disc_var) >= 1)
+            JuMP.@constraint(mip_model, sum(z1[j,k]+z2[j,k] for j=1:m.num_disc_var) >= 1)
         end
     end
 
-    @objective(mip_model, Min, sum(mabsx[i] for i=1:m.num_disc_var))
+    JuMP.@objective(mip_model, Min, sum(mabsx[i] for i=1:m.num_disc_var))
 
     # Break the mip solver if it takes too long or throw a warning when this option isn't available
     try
@@ -71,15 +71,15 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
        @warn "Set parameters is not supported"
     end
 
-    status = solve(mip_model)
+    status = JuMP.solve(mip_model)
 
     # round mip values
-    values = getvalue(mx)
+    values = JuMP.getvalue(mx)
     for i=1:m.num_disc_var
         vi = m.disc2var_idx[i]
         values[vi] = round(values[vi])
     end
-    return status, values, getobjectivevalue(mip_model)
+    return status, values, JuMP.getobjectivevalue(mip_model)
 end
 
 """
@@ -88,18 +88,18 @@ end
 Generates the original nlp but changes the objective to minimize the distance to the mip solution
 """
 function generate_nlp(m, mip_sol; random_start=false)
-    nlp_model = Model(solver=m.nl_solver)
+    nlp_model = JuMP.Model(solver=m.nl_solver)
     lb = m.l_var
     ub = m.u_var
 
-    @variable(nlp_model, lb[i] <= nx[i=1:m.num_var] <= ub[i])
+    JuMP.@variable(nlp_model, lb[i] <= nx[i=1:m.num_var] <= ub[i])
     if random_start
         restart_values = generate_random_restart(m)
         for i=1:m.num_var
-            setvalue(nx[i], restart_values[i])
+            JuMP.setvalue(nx[i], restart_values[i])
         end
     else
-        setvalue(nx[1:m.num_var],mip_sol)
+        JuMP.setvalue(nx[1:m.num_var],mip_sol)
     end
 
     # add all constraints
@@ -109,14 +109,14 @@ function generate_nlp(m, mip_sol; random_start=false)
         JuMP.addNLconstraint(nlp_model, constr_expr)
     end
 
-    @objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
-    setsolver(nlp_model, m.nl_solver)
-    status = solve(nlp_model)
-    nlp_sol = getvalue(nx)
-    nx_val = getvalue(nx)
-    nlp_obj = getobjectivevalue(nlp_model)
+    JuMP.@objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
+    JuMP.setsolver(nlp_model, m.nl_solver)
+    status = JuMP.solve(nlp_model)
+    nlp_sol = JuMP.getvalue(nx)
+    nx_val = JuMP.getvalue(nx)
+    nlp_obj = JuMP.getobjectivevalue(nlp_model)
 
-    internal_model = internalmodel(nlp_model)
+    internal_model = JuMP.internalmodel(nlp_model)
     if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
     end
@@ -136,16 +136,16 @@ function generate_real_nlp(m, sol; random_start=false)
         return status, sol, nlp_obj
     end
 
-    rmodel = Model(solver=m.nl_solver)
+    rmodel = JuMP.Model(solver=m.nl_solver)
     lb = m.l_var
     ub = m.u_var
 
-    @variable(rmodel, lb[i] <= rx[i=1:m.num_var] <= ub[i])
+    JuMP.@variable(rmodel, lb[i] <= rx[i=1:m.num_var] <= ub[i])
     if random_start
         restart_values = generate_random_restart(m)
         for i=1:m.num_var
             if m.var_type[i] == :Cont
-                setvalue(rx[i], restart_values[i])
+                JuMP.setvalue(rx[i], restart_values[i])
             end # discrete will be fixed anyway
         end
     end
@@ -166,11 +166,11 @@ function generate_real_nlp(m, sol; random_start=false)
         JuMP.addNLconstraint(rmodel, constr_expr)
     end
 
-    status = solve(rmodel)
-    real_sol = getvalue(rx)
-    obj_val = getobjectivevalue(rmodel)
+    status = JuMP.solve(rmodel)
+    real_sol = JuMP.getvalue(rx)
+    obj_val = JuMP.getobjectivevalue(rmodel)
 
-    internal_model = internalmodel(rmodel)
+    internal_model = JuMP.internalmodel(rmodel)
     if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
     end
@@ -230,7 +230,7 @@ end
 Run the feasibility pump
 """
 function fpump(m)
-    VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
+    seed!(1)
 
     if are_type_correct(m.solution, m.var_type, m.disc2var_idx, m.options.atol)
         return m.solution, m.objval

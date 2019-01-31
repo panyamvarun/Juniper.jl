@@ -7,21 +7,21 @@ include("POD_experiment/blend029.jl")
     println("KNAPSACK 50%")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,branch_strategy=:MostInfeasible,mip_gap=0.5))
+    m = JuMP.Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,branch_strategy=:MostInfeasible,mip_gap=0.5))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Bin)
+    JuMP.@variable(m, x[1:5], Bin)
 
-    @objective(m, Max, dot(v,x))
+    JuMP.@objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    JuMP.@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
-    status = solve(m)
-    objval = getobjectivevalue(m)
+    status = JuMP.solve(m)
+    objval = JuMP.getobjectivevalue(m)
     println("Obj: ", objval)
-    best_bound_val = getobjbound(m)
-    gap_val = getobjgap(m)
+    best_bound_val = JuMP.getobjbound(m)
+    gap_val = JuMP.getobjgap(m)
 
     @test status == :UserLimit
 
@@ -36,18 +36,18 @@ end
 
     m,objval = get_blend029()
 
-    setsolver(m, DefaultTestSolver(
-            branch_strategy=:StrongPseudoCost, 
+    JuMP.setsolver(m, DefaultTestSolver(
+            branch_strategy=:StrongPseudoCost,
             time_limit = 1, # second
             incumbent_constr = true
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
     @test status == :UserLimit
 
-    juniper_val = getobjectivevalue(m)
-    best_bound_val = getobjbound(m)
-    gap_val = getobjgap(m)
+    juniper_val = JuMP.getobjectivevalue(m)
+    best_bound_val = JuMP.getobjbound(m)
+    gap_val = JuMP.getobjgap(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -55,7 +55,7 @@ end
     println("gap_val: ", gap_val)
 
     @test best_bound_val >= objval
-    @test getsolvetime(m) <= 4 # it might be a bit higher than 1s
+    @test JuMP.getsolvetime(m) <= 4 # it might be a bit higher than 1s
 end
 
 #=
@@ -66,20 +66,20 @@ end
 
     pm = build_generic_model("data/pglib_opf_case5_pjm.m", SOCWRPowerModel, PowerModels.post_ots)
     m = pm.model
-    @variable(m, 0 <= aeiou <= 1)
-    @NLconstraint(m, aeiou^2== 1)
+    JuMP.@variable(m, 0 <= aeiou <= 1)
+    JuMP.@NLconstraint(m, aeiou^2== 1)
 
     solver = DefaultTestSolver(
         branch_strategy=:MostInfeasible,
         strong_restart = false,
         solution_limit = 1
     )
-    setsolver(m, solver)
-    status = solve(m)
+    JuMP.setsolver(m, solver)
+    status = JuMP.solve(m)
 
     @test status == :UserLimit || status == :Optimal
-    nsolutions = Juniper.getnsolutions(internalmodel(m))
-    juniper_val = getobjectivevalue(m)
+    nsolutions = Juniper.getnsolutions(JuMP.internalmodel(m))
+    juniper_val = JuMP.getobjectivevalue(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -96,22 +96,22 @@ end
 
     pm = build_generic_model("data/pglib_opf_case5_pjm.m", SOCWRPowerModel, PowerModels.post_ots)
     m = pm.model
-    @variable(m, 0 <= aeiou <= 1)
-    @NLconstraint(m, aeiou^2== 1)
+    JuMP.@variable(m, 0 <= aeiou <= 1)
+    JuMP.@NLconstraint(m, aeiou^2== 1)
 
     best_obj_stop = 15000
     solver = DefaultTestSolver(
-        branch_strategy=:MostInfeasible, 
+        branch_strategy=:MostInfeasible,
         strong_restart = false,
         best_obj_stop = best_obj_stop
     )
-    setsolver(m, solver)
-    status = solve(m)
+    JuMP.setsolver(m, solver)
+    status = JuMP.solve(m)
 
     @test status == :UserLimit || status == :Optimal
-    nsolutions = Juniper.getnsolutions(internalmodel(m))
+    nsolutions = Juniper.getnsolutions(JuMP.internalmodel(m))
 
-    juniper_val = getobjectivevalue(m)
+    juniper_val = JuMP.getobjectivevalue(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)

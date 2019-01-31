@@ -1,3 +1,5 @@
+import Distributed: nworkers
+
 #include("POD_experiment/blend029.jl")
 include("POD_experiment/tspn05.jl")
 #include("POD_experiment/ndcc12persp.jl")
@@ -15,15 +17,15 @@ include("basic/gamsworld.jl")
 
     m,objval = get_blend029()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             time_limit = 5,
-            mip_solver=CbcSolver(),
+            mip_solver=Cbc.CbcSolver(),
             incumbent_constr = true
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) >= 1
 end
 =#
 
@@ -36,15 +38,15 @@ end
 
     m,objval = get_blend029()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=CbcSolver()
+            mip_solver=Cbc.CbcSolver()
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) >= 1
 end
 =#
 
@@ -53,105 +55,105 @@ end
     println("FP: no linear")
     println("==================================")
 
-    m = Model()
-    @variable(m, x[1:10], Bin)
-    @NLconstraint(m, x[1]^2+x[2]^2 == 0)
-    @objective(m, Max, sum(x))
+    m = JuMP.Model()
+    JuMP.@variable(m, x[1:10], Bin)
+    JuMP.@NLconstraint(m, x[1]^2+x[2]^2 == 0)
+    JuMP.@objective(m, Max, sum(x))
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=CbcSolver()
+            mip_solver=Cbc.CbcSolver()
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) >= 1
 end
 
 @testset "FP: Integer test" begin
     println("==================================")
     println("FP: Integer Test")
     println("==================================")
-    m = Model()
+    m = JuMP.Model()
 
-    @variable(m, 1 <= x[1:4] <= 5, Int)
+    JuMP.@variable(m, 1 <= x[1:4] <= 5, Int)
 
-    @objective(m, Min, x[1])
+    JuMP.@objective(m, Min, x[1])
 
-    @constraint(m, x[1] >= 0.9)
-    @constraint(m, x[1] <= 1.1)
-    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
-    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
-    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
-    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
-    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
-    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+    JuMP.@constraint(m, x[1] >= 0.9)
+    JuMP.@constraint(m, x[1] <= 1.1)
+    JuMP.@NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=CbcSolver()
+        mip_solver=Cbc.CbcSolver()
     ))
 
-    status = solve(m)
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+    status = JuMP.solve(m)
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) >= 1
 end
 
 @testset "FP: Integer test2" begin
     println("==================================")
     println("FP: Integer Test 2")
     println("==================================")
-    m = Model()
+    m = JuMP.Model()
 
-    @variable(m, 0 <= x <= 10, Int)
-    @variable(m, y >= 0)
-    @variable(m, 0 <= u <= 10, Int)
-    @variable(m, w == 1)
+    JuMP.@variable(m, 0 <= x <= 10, Int)
+    JuMP.@variable(m, y >= 0)
+    JuMP.@variable(m, 0 <= u <= 10, Int)
+    JuMP.@variable(m, w == 1)
 
-    @objective(m, Min, -3x - y)
+    JuMP.@objective(m, Min, -3x - y)
 
-    @constraint(m, 3x + 10 <= 20)
-    @NLconstraint(m, y^2 <= u*w)
-    @NLconstraint(m, x^2 >= u*w)
+    JuMP.@constraint(m, 3x + 10 <= 20)
+    JuMP.@NLconstraint(m, y^2 <= u*w)
+    JuMP.@NLconstraint(m, x^2 >= u*w)
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=CbcSolver()
+        mip_solver=Cbc.CbcSolver()
     ))
 
-    status = solve(m)
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+    status = JuMP.solve(m)
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) >= 1
 end
 
 @testset "FP: infeasible cos" begin
     println("==================================")
     println("FP: Infeasible cos")
     println("==================================")
-    m = Model()
+    m = JuMP.Model()
 
-    @variable(m, 1 <= x <= 5, Int)
-    @variable(m, -2 <= y <= 2, Int)
+    JuMP.@variable(m, 1 <= x <= 5, Int)
+    JuMP.@variable(m, -2 <= y <= 2, Int)
 
-    @objective(m, Min, -x-y)
+    JuMP.@objective(m, Min, -x-y)
 
-    @NLconstraint(m, y==2*cos(2*x))
+    JuMP.@NLconstraint(m, y==2*cos(2*x))
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=CbcSolver()
+        mip_solver=Cbc.CbcSolver()
     ))
 
-    status = solve(m)
+    status = JuMP.solve(m)
     println("Status: ", status)
 
     @test status == :Infeasible
-    @test Juniper.getnsolutions(internalmodel(m)) == 0
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) == 0
 end
 
 @testset "FP: tspn05" begin
@@ -161,15 +163,15 @@ end
 
     m = get_tspn05()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
-            mip_solver=CbcSolver()
+            mip_solver=Cbc.CbcSolver()
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
     @test status == :Optimal
-    @test isapprox(getobjectivevalue(m),191.2541,atol=1e0)
+    @test isapprox(JuMP.getobjectivevalue(m),191.2541,atol=1e0)
 end
 
 
@@ -183,13 +185,13 @@ end
     # This probably has a "NLP couldn't be solved to optimality" warning in FPump
     m = get_ndcc12persp()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
-            mip_solver=CbcSolver(),
+            mip_solver=Cbc.CbcSolver(),
             time_limit = 10,
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
     @test status == :Optimal || status == :UserLimit
 end
@@ -203,17 +205,17 @@ end
     # This probably needs a restart in real nlp
     m = get_FLay02H()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
             feasibility_pump_time_limit = 10,
             time_limit = 10,
-            mip_solver=CbcSolver()
+            mip_solver=Cbc.CbcSolver()
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
     @test status == :Optimal || status == :UserLimit
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) >= 1
 end
 
 end

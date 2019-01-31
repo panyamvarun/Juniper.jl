@@ -7,15 +7,15 @@
 
     pm = build_generic_model("data/pglib_opf_case5_pjm.m", SOCWRPowerModel, PowerModels.post_ots)
     m = pm.model
-    @variable(m, 0 <= aeiou <= 1)
-    @NLconstraint(m, aeiou^2== 1)
+    JuMP.@variable(m, 0 <= aeiou <= 1)
+    JuMP.@NLconstraint(m, aeiou^2== 1)
 
-    setsolver(m, juniper_strong_no_restart)
-    status = solve(m)
+    JuMP.setsolver(m, juniper_strong_no_restart)
+    status = JuMP.solve(m)
 
     @test status == :Optimal || status == :LocalOptimal
 
-    juniper_val = getobjectivevalue(m)
+    juniper_val = JuMP.getobjectivevalue(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -30,8 +30,8 @@ end
 
     pm = build_generic_model("data/pglib_opf_case5_pjm.m", SOCWRPowerModel, PowerModels.post_ots)
     m = pm.model
-    @variable(m, 0 <= aeiou <= 1)
-    @NLconstraint(m, aeiou^2== 1)
+    JuMP.@variable(m, 0 <= aeiou <= 1)
+    JuMP.@NLconstraint(m, aeiou^2== 1)
 
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
@@ -39,12 +39,12 @@ end
         incumbent_constr = true,
         traverse_strategy = :DFS
     )
-    setsolver(m, solver)
-    status = solve(m)
+    JuMP.setsolver(m, solver)
+    status = JuMP.solve(m)
 
     @test status == :Optimal || status == :LocalOptimal
 
-    juniper_val = getobjectivevalue(m)
+    juniper_val = JuMP.getobjectivevalue(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -61,8 +61,8 @@ end
 
     pm = build_generic_model("data/pglib_opf_case5_pjm.m", SOCWRPowerModel, PowerModels.post_ots)
     m = pm.model
-    @variable(m, 0 <= aeiou <= 1)
-    @NLconstraint(m, aeiou^2== 1)
+    JuMP.@variable(m, 0 <= aeiou <= 1)
+    JuMP.@NLconstraint(m, aeiou^2== 1)
 
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
@@ -71,12 +71,12 @@ end
         obj_epsilon = 0.5,
         traverse_strategy = :DFS
     )
-    setsolver(m, solver)
-    status = solve(m)
+    JuMP.setsolver(m, solver)
+    status = JuMP.solve(m)
 
     @test status == :Optimal || status == :LocalOptimal
 
-    juniper_val = getobjectivevalue(m)
+    juniper_val = JuMP.getobjectivevalue(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)

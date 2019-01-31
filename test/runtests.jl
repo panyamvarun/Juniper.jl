@@ -1,21 +1,15 @@
-using Base,Logging
+using Test
 
-
-if VERSION > v"0.7.0-"
-    using Test, Distributed
-end
-
-if VERSION < v"0.7.0-"
-    using Base.Test
-end
-
+import Base: JLOptions
+import Distributed: nworkers, rmprocs, workers, addprocs
+import LinearAlgebra: dot
 
 if nworkers() > 1
     rmprocs(workers())
 end
 processors = 4 # Sys.CPU_CORES
 
-if Base.JLOptions().code_coverage == 1
+if JLOptions().code_coverage == 1
     addprocs(processors, exeflags = ["--code-coverage=user", "--inline=no", "--check-bounds=yes"])
 else
     addprocs(processors, exeflags = "--check-bounds=yes")
@@ -23,23 +17,9 @@ end
 
 println("Workers:", nworkers())
 
-
-if VERSION > v"0.7.0-"
-    using LinearAlgebra
-    using Statistics
-    using Random
-end
-
-if VERSION < v"0.7.0-"
-    using Compat
-end
-
-
-using JuMP
-
-using Ipopt
-using Cbc
-# using PowerModels
+import JuMP
+import Ipopt
+import Cbc
 
 using Juniper
 
@@ -49,7 +29,7 @@ opt_atol = 1e-6
 sol_rtol = 1e-3
 sol_atol = 1e-3
 
-function DefaultTestSolver(;nl_solver=IpoptSolver(print_level=0), solver_args...)
+function DefaultTestSolver(;nl_solver=Ipopt.IpoptSolver(print_level=0), solver_args...)
     solver_args_dict = Dict{Symbol,Any}()
     solver_args_dict[:log_levels] = []
     for v in solver_args

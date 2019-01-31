@@ -53,7 +53,7 @@ function MathProgBase.loadproblem!(
     l_constr::Vector{Float64}, u_constr::Vector{Float64},
     sense::Symbol, d::MathProgBase.AbstractNLPEvaluator)
 
-    VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
+    seed!(1)
 
     # initialise other fields
     m.num_var = num_var
@@ -114,12 +114,12 @@ function MathProgBase.optimize!(m::JuniperModel)
     end
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
-    m.objval   = getobjectivevalue(m.model)
-    m.solution = getvalue(m.x)
+    m.objval   = JuMP.getobjectivevalue(m.model)
+    m.solution = JuMP.getvalue(m.x)
 
     m.options.debug && debug_objective(m.debugDict,m)
 
-    internal_model = internalmodel(m.model)
+    internal_model = JuMP.internalmodel(m.model)
     if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
     end
@@ -141,8 +141,8 @@ function MathProgBase.optimize!(m::JuniperModel)
         m.nsolutions = bnbtree.nsolutions
     else
         m.nsolutions = 1
-        # TODO should be getobjbound but that is not working
-        m.best_bound = getobjectivevalue(m.model)
+        # TODO should be JuMP.getobjbound but that is not working
+        m.best_bound = JuMP.getobjectivevalue(m.model)
     end
     m.soltime = time()-m.start_time
 
@@ -162,11 +162,11 @@ end
 function create_root_model!(m::JuniperModel)
     ps = m.options.log_levels
 
-    m.model = Model(solver=m.nl_solver)
+    m.model = JuMP.Model(solver=m.nl_solver)
     lb = m.l_var
     ub = m.u_var
     # all continuous we solve relaxation first
-    @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
+    JuMP.@variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
 
     # define the objective function
     obj_expr = MathProgBase.obj_expr(m.d)
@@ -188,23 +188,23 @@ function create_root_model!(m::JuniperModel)
 end
 
 function solve_root_model!(m::JuniperModel)
-    m.status = solve(m.model; suppress_warnings=true)
+    m.status = JuMP.solve(m.model; suppress_warnings=true)
     restarts = 0
     max_restarts = m.options.num_resolve_root_relaxation
     m.options.debug && debug_init(m.debugDict)
     while m.status != :Optimal && m.status != :LocalOptimal &&
         restarts < max_restarts && time()-m.start_time < m.options.time_limit
 
-        internal_model = internalmodel(m.model)
+        internal_model = JuMP.internalmodel(m.model)
         if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
             MathProgBase.freemodel!(internal_model)
         end
         restart_values = generate_random_restart(m)
         m.options.debug && debug_restart_values(m.debugDict,restart_values)
         for i=1:m.num_var
-            setvalue(m.x[i], restart_values[i])
+            JuMP.setvalue(m.x[i], restart_values[i])
         end
-        m.status = solve(m.model)
+        m.status = JuMP.solve(m.model)
         restarts += 1
     end
     return restarts

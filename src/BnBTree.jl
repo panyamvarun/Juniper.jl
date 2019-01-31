@@ -52,7 +52,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
         JuMP.setlowerbound(m.x[i], cnode.l_var[i])
         JuMP.setupperbound(m.x[i], cnode.u_var[i])
     end
-    setvalue(m.x[1:m.num_var],step_obj.node.solution)
+    JuMP.setvalue(m.x[1:m.num_var],step_obj.node.solution)
 
     if occursin("Ipopt", string(m.nl_solver))
         overwritten = false
@@ -82,8 +82,8 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
         end
     end
 
-    objval = getobjectivevalue(m.model)
-    cnode.solution = getvalue(m.x)
+    objval = JuMP.getobjectivevalue(m.model)
+    cnode.solution = JuMP.getvalue(m.x)
     cnode.relaxation_state = status
     if status == :Error
         cnode.state = :Error
@@ -96,7 +96,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
     else
         cnode.state = :Infeasible
     end
-    internal_model = internalmodel(m.model)
+    internal_model = JuMP.internalmodel(m.model)
     if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
     end
@@ -437,7 +437,7 @@ end
 
 function dummysolve()
     global m
-    solve(m.model)
+    JuMP.solve(m.model)
 end
 
 """
@@ -461,8 +461,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     counter = 0
 
     for p=2:np
-        VERSION > v"0.7.0-" ? (seed = Random.seed!) : (seed = srand)
-        remotecall_fetch(seed, p, 1)
+        remotecall_fetch(seed!, p, 1)
         sendto(p, m=tree.m)
         sendto(p, is_newincumbent=false)
     end
@@ -568,9 +567,9 @@ function solvemip(tree::BnBTreeObj)
     # check if already integral
     if are_type_correct(tree.m.solution,tree.m.var_type,tree.disc2var_idx, tree.options.atol)
         tree.nsolutions = 1
-        objval = getobjectivevalue(tree.m.model)
-        sol = getvalue(tree.m.x)
-        bbound = getobjectivebound(tree.m.model)
+        objval = JuMP.getobjectivevalue(tree.m.model)
+        sol = JuMP.getvalue(tree.m.x)
+        bbound = JuMP.getobjectivebound(tree.m.model)
         tree.incumbent = Incumbent(objval,sol,:Optimal,bbound)
         return tree.incumbent
     end

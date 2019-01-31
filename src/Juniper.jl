@@ -1,29 +1,13 @@
 module Juniper
 
-using MathProgBase
-using JuMP
-using JSON
+import MathProgBase
+import JuMP
+import JSON
 
-if VERSION < v"0.7.0-"
-    import Compat: occursin
-    import Compat: Nothing
-    import Compat: round
-    import Compat: @warn
-    import Compat: pushfirst!
-    import Compat: popfirst!
-    import Compat: Array
-    import Compat: undef
-    import Compat: hasmethod
-    import Compat: findall
-end
-
-if VERSION > v"0.7.0-"
-    using LinearAlgebra
-    using Random
-    using Distributed
-    using Statistics
-end
-
+import LinearAlgebra: dot
+import Random: shuffle!, seed!
+import Distributed: @spawnat, myid, nprocs, nworkers, remotecall, remotecall_fetch
+import Statistics: median
 
 
 include("types.jl")

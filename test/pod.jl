@@ -10,19 +10,19 @@ include("POD_experiment/nous1.jl")
 
     m,objval = get_blend029()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_branching_perc = 100,
             strong_branching_nsteps = 100,
             strong_restart = true
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
     @test status == :Optimal
 
-    juniper_val = getobjectivevalue(m)
-    best_bound_val = getobjbound(m)
-    gap_val = getobjgap(m)
+    juniper_val = JuMP.getobjectivevalue(m)
+    best_bound_val = JuMP.getobjbound(m)
+    gap_val = JuMP.getobjgap(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -42,19 +42,19 @@ end
 
     m,objval = get_blend029()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_branching_approx_time_limit=0.01,
             time_limit = 4,
             strong_restart = false
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
     @test status == :Optimal || status == :UserLimit
 
-    juniper_val = getobjectivevalue(m)
-    best_bound_val = getobjbound(m)
-    gap_val = getobjgap(m)
+    juniper_val = JuMP.getobjectivevalue(m)
+    best_bound_val = JuMP.getobjbound(m)
+    gap_val = JuMP.getobjgap(m)
 
     # maximization problem
     @test best_bound_val >= juniper_val || isnan(juniper_val)
@@ -67,12 +67,12 @@ end
 
     m = get_nous1()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_restart = true,
-            mip_solver=CbcSolver(logLevel=0)
+            mip_solver=Cbc.CbcSolver(logLevel=0)
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
     @test status == :Optimal
 end
@@ -84,12 +84,12 @@ end
 
     m = get_nous1()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_restart = false,
-            mip_solver=CbcSolver(logLevel=0)
+            mip_solver=Cbc.CbcSolver(logLevel=0)
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
     @test status == :Optimal
 end
@@ -103,19 +103,19 @@ end
 
     m,objval = get_blend029()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:Reliability,
             reliability_branching_perc = 50,
             reliability_branching_threshold = 5,
             strong_restart = true
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
     @test status == :Optimal
 
-    juniper_val = getobjectivevalue(m)
-    best_bound_val = getobjbound(m)
-    gap_val = getobjgap(m)
+    juniper_val = JuMP.getobjectivevalue(m)
+    best_bound_val = JuMP.getobjbound(m)
+    gap_val = JuMP.getobjgap(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)

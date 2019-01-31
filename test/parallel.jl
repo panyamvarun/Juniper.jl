@@ -14,16 +14,16 @@ include("POD_experiment/blend029.jl")
         branch_strategy=:Reliability,
         strong_restart = false,
         processors = 4,
-        mip_solver = CbcSolver(),
+        mip_solver = Cbc.CbcSolver(),
         incumbent_constr = true
-    ) 
+    )
 
-    setsolver(m, juniper)
-    status = solve(m)
+    JuMP.setsolver(m, juniper)
+    status = JuMP.solve(m)
     @test status == :Optimal
 
-    juniper_val = getobjectivevalue(m)
-    juniper_bb = getobjbound(m)
+    juniper_val = JuMP.getobjectivevalue(m)
+    juniper_bb = JuMP.getobjbound(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -42,26 +42,26 @@ end
         log_levels=[:Table],
         branch_strategy=:MostInfeasible,
         solution_limit=1,
-        mip_solver=CbcSolver(),
+        mip_solver=Cbc.CbcSolver(),
         processors = 3
     )
-    
-    m = Model()
+
+    m = JuMP.Model()
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Bin)
+    JuMP.@variable(m, x[1:5], Bin)
 
-    @objective(m, Max, dot(v,x))
+    JuMP.@objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    JuMP.@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
-    setsolver(m, juniper_one_solution)
-    status = solve(m)
+    JuMP.setsolver(m, juniper_one_solution)
+    status = JuMP.solve(m)
     @test status == :UserLimit
 
     # maybe all three found a solution at the same time
-    @test Juniper.getnsolutions(internalmodel(m)) <= 3 
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) <= 3
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) >= 1
 end
 
 @testset "Knapsack Max Reliable incumbent_constr" begin
@@ -69,24 +69,24 @@ end
     println("KNAPSACK Reliable incumbent_constr")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:MostInfeasible,
+    m = JuMP.Model(solver=DefaultTestSolver(;branch_strategy=:MostInfeasible,
                                         incumbent_constr=true,processors=2))
- 
+
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Bin)
+    JuMP.@variable(m, x[1:5], Bin)
 
-    @objective(m, Max, dot(v,x))
+    JuMP.@objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    JuMP.@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
-    status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
+    status = JuMP.solve(m)
+    println("Obj: ", JuMP.getobjectivevalue(m))
 
     @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
-    @test isapprox(getobjectivebound(m), 65, atol=opt_atol)
-    @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
+    @test isapprox(JuMP.getobjectivevalue(m), 65, atol=opt_atol)
+    @test isapprox(JuMP.getobjectivebound(m), 65, atol=opt_atol)
+    @test isapprox(JuMP.getvalue(x), [0,0,0,1,1], atol=sol_atol)
 end
 
 
@@ -101,21 +101,21 @@ end
         branch_strategy=:Reliability,
         strong_restart = false,
         processors = 10
-    ) 
+    )
 
-    setsolver(m, juniper)
-    status = solve(m)
+    JuMP.setsolver(m, juniper)
+    status = JuMP.solve(m)
     @test status == :Optimal
 
-    juniper_val = getobjectivevalue(m)
-    juniper_bb = getobjbound(m)
+    juniper_val = JuMP.getobjectivevalue(m)
+    juniper_bb = JuMP.getobjbound(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
     println("bound: ", juniper_bb)
 
-    im = internalmodel(m)
-    # must have changed to 4 processors 
+    im = JuMP.internalmodel(m)
+    # must have changed to 4 processors
     @test im.options.processors == 4
     @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
@@ -131,14 +131,14 @@ end
         branch_strategy=:StrongPseudoCost,
         strong_restart = false,
         processors = 4
-    ) 
+    )
 
-    setsolver(m, juniper)
-    status = solve(m)
+    JuMP.setsolver(m, juniper)
+    status = JuMP.solve(m)
     @test status == :Optimal
 
-    juniper_val = getobjectivevalue(m)
-    juniper_bb = getobjbound(m)
+    juniper_val = JuMP.getobjectivevalue(m)
+    juniper_bb = JuMP.getobjbound(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -153,28 +153,28 @@ end
     println("KNAPSACK 100%")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;processors=2,traverse_strategy=:DBFS,mip_gap=100,
+    m = JuMP.Model(solver=DefaultTestSolver(;processors=2,traverse_strategy=:DBFS,mip_gap=100,
               branch_strategy=:MostInfeasible))
-    
+
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Bin)
+    JuMP.@variable(m, x[1:5], Bin)
 
-    @objective(m, Max, dot(v,x))
+    JuMP.@objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    JuMP.@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
-    status = solve(m)
-    objval = getobjectivevalue(m)
+    status = JuMP.solve(m)
+    objval = JuMP.getobjectivevalue(m)
     println("Obj: ", objval)
-    best_bound_val = getobjbound(m)
-    gap_val = getobjgap(m)
-    println("bb: ", getobjbound(m))
+    best_bound_val = JuMP.getobjbound(m)
+    gap_val = JuMP.getobjgap(m)
+    println("bb: ", JuMP.getobjbound(m))
 
     @test status == :UserLimit
 
     @test best_bound_val >= objval
-    @test 0.01 <= gap_val <= 1 || Juniper.getnsolutions(internalmodel(m)) == 1
+    @test 0.01 <= gap_val <= 1 || Juniper.getnsolutions(JuMP.internalmodel(m)) == 1
 end
 
 #=
@@ -186,7 +186,7 @@ end
 
     m,objval = get_blend029()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_branching_perc = 50,
             strong_branching_nsteps = 5,
@@ -195,13 +195,13 @@ end
             debug = true,
             debug_write = true
     ))
-    status = solve(m)
+    status = JuMP.solve(m)
 
     @test status == :Optimal
 
-    juniper_val = getobjectivevalue(m)
-    best_bound_val = getobjbound(m)
-    gap_val = getobjgap(m)
+    juniper_val = JuMP.getobjectivevalue(m)
+    best_bound_val = JuMP.getobjbound(m)
+    gap_val = JuMP.getobjgap(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -227,33 +227,33 @@ end
         debug = true
     )
 
-    m = Model(solver=juniper_all_solutions)
+    m = JuMP.Model(solver=juniper_all_solutions)
 
-    @variable(m, 1 <= x[1:4] <= 5, Int)
+    JuMP.@variable(m, 1 <= x[1:4] <= 5, Int)
 
-    @objective(m, Min, x[1])
+    JuMP.@objective(m, Min, x[1])
 
-    @constraint(m, x[1] >= 0.9)
-    @constraint(m, x[1] <= 1.1)
-    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
-    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
-    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
-    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
-    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
-    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+    JuMP.@constraint(m, x[1] >= 0.9)
+    JuMP.@constraint(m, x[1] <= 1.1)
+    JuMP.@NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
-    status = solve(m)
+    status = JuMP.solve(m)
 
-    debugDict = internalmodel(m).debugDict
-    list_of_solutions = Juniper.getsolutions(internalmodel(m))
-    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
+    debugDict = JuMP.internalmodel(m).debugDict
+    list_of_solutions = Juniper.getsolutions(JuMP.internalmodel(m))
+    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(JuMP.internalmodel(m))
 
     @test status == :Optimal
-    @test Juniper.getnsolutions(internalmodel(m)) == 24
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) == 24
 
     @test getnstate(debugDict,:Integral) == 24
     @test different_hashes(debugDict) == true
-    counter_test(debugDict,Juniper.getnbranches(internalmodel(m)))
+    counter_test(debugDict,Juniper.getnbranches(JuMP.internalmodel(m)))
 end
 
 @testset "bruteforce fake parallel vs sequential" begin
@@ -277,28 +277,28 @@ end
         force_parallel = true # just for testing this goes into the parallel branch (using driver + 1)
     )
 
-    m = Model(solver=juniper_all_solutions)
+    m = JuMP.Model(solver=juniper_all_solutions)
 
-    @variable(m, 1 <= x[1:4] <= 5, Int)
+    JuMP.@variable(m, 1 <= x[1:4] <= 5, Int)
 
-    @objective(m, Min, x[1])
+    JuMP.@objective(m, Min, x[1])
 
-    @constraint(m, x[1] >= 0.9)
-    @constraint(m, x[1] <= 1.1)
-    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
-    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
-    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
-    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
-    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
-    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+    JuMP.@constraint(m, x[1] >= 0.9)
+    JuMP.@constraint(m, x[1] <= 1.1)
+    JuMP.@NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
-    status = solve(m)
-    nbranches = Juniper.getnbranches(internalmodel(m))
+    status = JuMP.solve(m)
+    nbranches = Juniper.getnbranches(JuMP.internalmodel(m))
 
-    setsolver(m, juniper_all_solutions_p)
+    JuMP.setsolver(m, juniper_all_solutions_p)
 
-    status = solve(m)
-    @test Juniper.getnbranches(internalmodel(m)) == nbranches
+    status = JuMP.solve(m)
+    @test Juniper.getnbranches(JuMP.internalmodel(m)) == nbranches
 end
 
 
@@ -314,28 +314,28 @@ end
         processors = 3
     )
 
-    m = Model(solver=juniper_all_solutions)
+    m = JuMP.Model(solver=juniper_all_solutions)
 
-    @variable(m, 1 <= x[1:4] <= 5, Int)
+    JuMP.@variable(m, 1 <= x[1:4] <= 5, Int)
 
-    @objective(m, Min, x[1])
+    JuMP.@objective(m, Min, x[1])
 
-    @constraint(m, x[1] >= 0.9)
-    @constraint(m, x[1] <= 1.1)
-    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
-    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
-    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
-    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
-    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
-    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+    JuMP.@constraint(m, x[1] >= 0.9)
+    JuMP.@constraint(m, x[1] <= 1.1)
+    JuMP.@NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    JuMP.@NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
-    status = solve(m)
+    status = JuMP.solve(m)
     println("Status: ", status)
-    list_of_solutions = Juniper.getsolutions(internalmodel(m))
-    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
+    list_of_solutions = Juniper.getsolutions(JuMP.internalmodel(m))
+    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(JuMP.internalmodel(m))
 
     @test status == :Optimal
-    @test Juniper.getnsolutions(internalmodel(m)) == 24
+    @test Juniper.getnsolutions(JuMP.internalmodel(m)) == 24
 end
 
 
@@ -353,13 +353,13 @@ end
     )
 
     m,objval = get_blend029()
-    setsolver(m, juniper_all_solutions)
+    JuMP.setsolver(m, juniper_all_solutions)
 
-    status = solve(m)
+    status = JuMP.solve(m)
     println("Status: ", status)
-    
+
     @test status == :UserLimit
-    @test getsolvetime(m) <= 13 # some seconds more are allowed
+    @test JuMP.getsolvetime(m) <= 13 # some seconds more are allowed
 end
 =#
 
@@ -367,19 +367,19 @@ end
     println("==================================")
     println("Infeasible cos")
     println("==================================")
-    m = Model(solver=DefaultTestSolver(
+    m = JuMP.Model(solver=DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         processors = 2
     ))
 
-    @variable(m, 1 <= x <= 5, Int)
-    @variable(m, -2 <= y <= 2, Int)
+    JuMP.@variable(m, 1 <= x <= 5, Int)
+    JuMP.@variable(m, -2 <= y <= 2, Int)
 
-    @objective(m, Min, -x-y)
+    JuMP.@objective(m, Min, -x-y)
 
-    @NLconstraint(m, y==2*cos(2*x))
+    JuMP.@NLconstraint(m, y==2*cos(2*x))
 
-    status = solve(m)
+    status = JuMP.solve(m)
     println("Status: ", status)
 
     @test status == :Infeasible
@@ -389,19 +389,19 @@ end
     println("==================================")
     println("Infeasible relaxation")
     println("==================================")
-    m = Model(solver=DefaultTestSolver(
+    m = JuMP.Model(solver=DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         processors = 2
     ))
 
-    @variable(m, 0 <= x[1:10] <= 2, Int)
+    JuMP.@variable(m, 0 <= x[1:10] <= 2, Int)
 
-    @objective(m, Min, sum(x))
+    JuMP.@objective(m, Min, sum(x))
 
-    @constraint(m, sum(x[1:5]) <= 20)
-    @NLconstraint(m, x[1]*x[2]*x[3] >= 10)
+    JuMP.@constraint(m, sum(x[1:5]) <= 20)
+    JuMP.@NLconstraint(m, x[1]*x[2]*x[3] >= 10)
 
-    status = solve(m)
+    status = JuMP.solve(m)
     println("Status: ", status)
 
     @test status == :Infeasible
@@ -411,20 +411,20 @@ end
     println("==================================")
     println("Infeasible integer")
     println("==================================")
-    m = Model(solver=DefaultTestSolver(
+    m = JuMP.Model(solver=DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         processors = 2
     ))
 
-    @variable(m, 0 <= x[1:10] <= 2, Int)
+    JuMP.@variable(m, 0 <= x[1:10] <= 2, Int)
 
-    @objective(m, Min, sum(x))
+    JuMP.@objective(m, Min, sum(x))
 
-    @constraint(m, sum(x[1:5]) <= 20)
-    @NLconstraint(m, x[1]*x[2]*x[3] >= 7)
-    @NLconstraint(m, x[1]*x[2]*x[3] <= 7.5)
+    JuMP.@constraint(m, sum(x[1:5]) <= 20)
+    JuMP.@NLconstraint(m, x[1]*x[2]*x[3] >= 7)
+    JuMP.@NLconstraint(m, x[1]*x[2]*x[3] <= 7.5)
 
-    status = solve(m)
+    status = JuMP.solve(m)
     println("Status: ", status)
 
     @test status == :Infeasible
@@ -434,19 +434,19 @@ end
     println("==================================")
     println("Infeasible in strong")
     println("==================================")
-    m = Model(solver=DefaultTestSolver(
+    m = JuMP.Model(solver=DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         processors = 2
     ))
 
-    @variable(m, 0 <= x[1:5] <= 2, Int)
+    JuMP.@variable(m, 0 <= x[1:5] <= 2, Int)
 
-    @objective(m, Min, sum(x))
+    JuMP.@objective(m, Min, sum(x))
 
-    @NLconstraint(m, x[3]^2 <= 2)
-    @NLconstraint(m, x[3]^2 >= 1.2)
+    JuMP.@NLconstraint(m, x[3]^2 <= 2)
+    JuMP.@NLconstraint(m, x[3]^2 >= 1.2)
 
-    status = solve(m)
+    status = JuMP.solve(m)
     println("Status: ", status)
 
     @test status == :Infeasible

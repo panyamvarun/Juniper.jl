@@ -2,43 +2,43 @@
 @testset "Function testing" begin
 
 @testset ":Options" begin
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5))
+    m = JuMP.Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Bin)
+    JuMP.@variable(m, x[1:5], Bin)
 
-    @objective(m, Max, dot(v,x))
+    JuMP.@objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    JuMP.@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     JuMP.build(m)
     options = m.internalModel.options
 
-    nd_options = Juniper.get_non_default_options(options)    
+    nd_options = Juniper.get_non_default_options(options)
     @test nd_options[:obj_epsilon] == 0.5
     @test nd_options[:traverse_strategy] == :DBFS
     @test length(nd_options[:log_levels]) == 0
 end
 
 function option_not_available_t()
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBS,obj_epsilon=0.5))
+    m = JuMP.Model(solver=DefaultTestSolver(;traverse_strategy=:DBS,obj_epsilon=0.5))
 end
 function option_not_available_b()
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:Pseudo,obj_epsilon=0.5))
+    m = JuMP.Model(solver=DefaultTestSolver(;branch_strategy=:Pseudo,obj_epsilon=0.5))
 end
 function option_not_available()
-    m = Model(solver=DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5))
+    m = JuMP.Model(solver=DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5))
 end
 function option_no_mip_solver()
-    m = Model(solver=DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5,feasibility_pump=true))
+    m = JuMP.Model(solver=DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5,feasibility_pump=true))
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Bin)
+    JuMP.@variable(m, x[1:5], Bin)
 
-    @objective(m, Max, dot(v,x))
+    JuMP.@objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    JuMP.@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     JuMP.build(m)
     return m.internalModel.options
@@ -49,34 +49,34 @@ end
     @test_throws ErrorException option_not_available_b()
     opts = option_no_mip_solver()
     @test opts.feasibility_pump == false
-    @test !isa(try option_not_available() catch ex ex end, Exception) 
+    @test !isa(try option_not_available() catch ex ex end, Exception)
 end
 
 @testset "Info/Table" begin
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2,
+    m = JuMP.Model(solver=DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2,
                                         strong_restart=true))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Bin)
+    JuMP.@variable(m, x[1:5], Bin)
 
-    @objective(m, Max, dot(v,x))
+    JuMP.@objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
-    
+    JuMP.@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
+
     JuMP.build(m)
     m = m.internalModel
     options = m.options
 
-    @test !isa(try Juniper.print_info(m) catch ex ex end, Exception) 
-    @test !isa(try Juniper.print_options(m;all=true) catch ex ex end, Exception) 
-    @test !isa(try Juniper.print_options(m;all=false) catch ex ex end, Exception) 
-    
+    @test !isa(try Juniper.print_info(m) catch ex ex end, Exception)
+    @test !isa(try Juniper.print_options(m;all=true) catch ex ex end, Exception)
+    @test !isa(try Juniper.print_options(m;all=false) catch ex ex end, Exception)
+
 
     fields, field_chars = Juniper.get_table_config(options)
     ln = Juniper.get_table_header_line(fields, field_chars)
     @test length(ln) == sum(field_chars)
-        
+
     start_time = time()
     tree = Juniper.init(start_time,m)
     tree.best_bound = 100
@@ -107,7 +107,7 @@ end
     tab_arr_new[1] = 100
     @test Juniper.is_table_diff(fields, tab_arr, tab_arr_new) == true
     @test Juniper.is_table_diff(fields, tab_arr, tab_arr) == false
-    
+
     # test if :Time not exists
     i = 1
     for f in fields
@@ -128,7 +128,7 @@ end
     tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
     idx_restarts = findfirst(fields .== :Restarts)
     @test tab_arr[idx_restarts] == "-"
-    
+
     # normal gain gap
     step_obj.gain_gap = 0.05
     tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
@@ -154,7 +154,7 @@ end
     idx_gap = findfirst(fields .== :Gap)
     @test tab_arr[idx_gap] == ">>"
 
-    # way too long 
+    # way too long
     fields, field_chars = Juniper.get_table_config(options)
     start_time = time()-123456789
     tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
@@ -166,24 +166,24 @@ end
     mip_obj,nlp_obj,t, fields, field_chars = 5,2,2, [:MIPobj,:NLPobj,:Time], [20,20,10]
     ln, arr = Juniper.get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
     @test length(ln) == 50
-    @test arr == ["5.0","2.0","2.0"] 
+    @test arr == ["5.0","2.0","2.0"]
 end
 
 @testset "Random restarts" begin
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2,
+    m = JuMP.Model(solver=DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2,
     strong_restart=true))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Int)
-    setlowerbound(x[1], 0)
-    setlowerbound(x[2], 0.5)
-    setupperbound(x[3], 1)
-    setupperbound(x[2], 1)
+    JuMP.@variable(m, x[1:5], Int)
+    JuMP.setlowerbound(x[1], 0)
+    JuMP.setlowerbound(x[2], 0.5)
+    JuMP.setupperbound(x[3], 1)
+    JuMP.setupperbound(x[2], 1)
 
-    @objective(m, Max, dot(v,x))
+    JuMP.@objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    JuMP.@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     JuMP.build(m)
     model = m.internalModel
@@ -195,7 +195,7 @@ end
     @test -19 <= cont_restart[3] <= 1
     @test -10 <= cont_restart[4] <= 10
     @test -10 <= cont_restart[5] <= 10
-    
+
 
     disc_restart = Juniper.generate_random_restart(model; cont=false)
     @test length(disc_restart) == 5
@@ -206,24 +206,24 @@ end
 end
 
 @testset "LSE matrix" begin
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:MostInfeasible,log_levels=[:All]))
+    m = JuMP.Model(solver=DefaultTestSolver(;branch_strategy=:MostInfeasible,log_levels=[:All]))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Int)
-    @variable(m, y)
+    JuMP.@variable(m, x[1:5], Int)
+    JuMP.@variable(m, y)
 
-    @objective(m, Max, dot(v,x)+100*y)
+    JuMP.@objective(m, Max, dot(v,x)+100*y)
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
-    @constraint(m, sum(w[i]*x[i] for i=1:5) <= 25)   
-    @constraint(m, sum(w[i]*x[i] for i=1:2)+1*y <= 10)   
-    @constraint(m, 3*y <= 20)
+    JuMP.@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
+    JuMP.@constraint(m, sum(w[i]*x[i] for i=1:5) <= 25)
+    JuMP.@constraint(m, sum(w[i]*x[i] for i=1:2)+1*y <= 10)
+    JuMP.@constraint(m, 3*y <= 20)
 
-    solve(m)
-    
+    JuMP.solve(m)
+
     model = m.internalModel
-    
+
     complete_mat = Juniper.construct_complete_affine_matrix(model)
     @test complete_mat[1,:] == vcat(w, [0])
     @test complete_mat[2,:] == vcat(w[1:2],[0,0,0],[1])
