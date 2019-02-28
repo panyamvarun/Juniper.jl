@@ -38,7 +38,7 @@ end
     println("==================================")
 
     m,objval = get_blend029()
-
+    println("It should get: ", objval)
     set_optimizer(m, with_optimizer(
         Juniper.Optimizer,
         DefaultTestSolver(
