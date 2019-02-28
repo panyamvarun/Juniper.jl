@@ -205,9 +205,9 @@ end
 """ 
 function MOI.optimize!(model::Optimizer)
     Random.seed!(1)
-    (:All in ps) && println("before MOI.initialize")
+    println("before MOI.initialize")
     MOI.initialize(model.nlp_data.evaluator, [:ExprGraph])
-    (:All in ps) && println("after MOI.initialize")
+    println("after MOI.initialize")
     
     if isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
         @info "no explicit NLP constraints or objective provided using @NLconstraint or @NLobjective macros"
