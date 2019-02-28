@@ -42,7 +42,7 @@ end
     set_optimizer(m, with_optimizer(
         Juniper.Optimizer,
         DefaultTestSolver(
-            log_levels = [:Info, :Table],
+            log_levels = [:All],
             branch_strategy=:StrongPseudoCost, 
             time_limit = 1, # second
             incumbent_constr = true
