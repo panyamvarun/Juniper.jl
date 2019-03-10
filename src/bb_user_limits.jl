@@ -4,6 +4,9 @@ function isbreak_mip_gap(tree)
         b = tree.best_bound
         f = incu.objval
         gap = abs(b-f)/abs(f)
+        if b == f
+            gap = 0
+        end
         if gap <= tree.options.mip_gap
             default_opts = get_default_options()
             if tree.options.mip_gap > default_opts.mip_gap
