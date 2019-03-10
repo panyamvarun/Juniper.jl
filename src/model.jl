@@ -17,7 +17,6 @@ Initialize the NonLinearModel with the solver, set status, objval and solution
 """
 function JuniperNonlinearModel(s::JuniperSolverObj)
     m = JuniperModel() # don't initialise everything yet
-
     m.nl_solver = s.nl_solver
     m.options = s.options
     m.status = :None
@@ -157,6 +156,11 @@ function MathProgBase.optimize!(m::JuniperModel)
     return m.status
 end
 
+function register(s::Symbol, dimension::Integer, f::Function; autodiff::Bool=false)
+    return RegisteredFunction(s, dimension, f, autodiff)
+end
+
+
 function create_root_model!(m::JuniperModel)
     ps = m.options.log_levels
 
@@ -165,6 +169,13 @@ function create_root_model!(m::JuniperModel)
     ub = m.u_var
     # all continuous we solve relaxation first
     @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
+
+    if m.options.registered_functions != nothing
+        for reg_f in m.options.registered_functions
+            JuMP.register(m.model, reg_f.s, reg_f.dimension, reg_f.f; autodiff=reg_f.autodiff)
+        end
+    end
+
 
     # define the objective function
     obj_expr = MathProgBase.obj_expr(m.d)

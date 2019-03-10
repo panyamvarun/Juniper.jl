@@ -1,4 +1,11 @@
 
+mutable struct RegisteredFunction
+    s         :: Symbol
+    dimension :: Integer
+    f         :: Function
+    autodiff  :: Bool
+end
+
 # Options for the solver (more details like defaults in solver.jl)
 mutable struct SolverOptions
     log_levels                          :: Vector{Symbol}
@@ -28,6 +35,7 @@ mutable struct SolverOptions
     tabu_list_length                    :: Int64
     num_resolve_nlp_feasibility_pump    :: Int64
     mip_solver                          :: Union{Nothing, MathProgBase.AbstractMathProgSolver}
+    registered_functions                :: Union{Nothing, Vector{RegisteredFunction}}
     
     # only for testing
     force_parallel                      :: Bool

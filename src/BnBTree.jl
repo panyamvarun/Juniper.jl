@@ -69,8 +69,9 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
             push!(m.nl_solver.options, (:mu_init, 1e-5))
         end
     end
-
+    println("Before solving process node")
     status = JuMP.solve(m.model, suppress_warnings=true)
+    println("After solving process node")
 
     # reset mu_init
     if occursin("Ipopt", string(m.nl_solver))
@@ -100,6 +101,8 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
     if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
     end
+    println("status: ", status)
+    println("cnode.state: ", cnode.state)
     return cnode.state
 end
 
@@ -307,13 +310,14 @@ function one_branch_step!(m1, incumbent, opts, step_obj, disc2var_idx, gains, co
     else
         m = m1
     end
+    println("one_branch_step...")
 
     node = step_obj.node
     step_obj.counter = counter
 
 # get branch variable
     node_idx_start = time()
-    get_branching_disc_idx!(m, step_obj, opts, disc2var_idx, gains, counter)
+    get_branching_disc_idx!(m, step_obj, opts, disc2var_idx, gains, counter)   
     step_obj.node_idx_time = time()-node_idx_start
     # if no variable got selected might be true that all variables are already type correct
     # node.solution can be updated if one child is infeasible and the other optimal (can result in discrete)
@@ -418,6 +422,7 @@ function solve_sequential(tree,
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
+        
         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
         tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
 
